@@ -126,5 +126,6 @@ function updatePoints(points) {
 }
 
 function slotInformation(index){
+	console.log(index)
 	console.log(slots[index])
 }
