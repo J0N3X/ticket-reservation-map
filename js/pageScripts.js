@@ -62,6 +62,7 @@ $(document).ready(function() {
 			})
 		});
 		map.on('click', function(evt) {
+			console.info(evt.coordinate);
 			var feature = map.forEachFeatureAtPixel(evt.pixel,
 				function(feature) {
 					return feature;
