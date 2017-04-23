@@ -3,6 +3,8 @@ var map
 	, slots = {}
 	,pisteet = []
 	, vectorLayer
+	, vectorSource
+	, deletaus = false
 	;
 var freeStyle = new ol.style.Style({
 	image: new ol.style.Icon(/** @type {olx.style.IconOptions} */({
@@ -69,6 +71,8 @@ $(document).ready(function() {
 				});
 			if (feature) {
 				slotInformation(feature.get("slot"))
+			}else{
+				uudenPisteenLisays(evt.coordinate[0], evt.coordinate[1])
 			}
 		});
 
@@ -125,7 +129,7 @@ function updatePoints(points) {
 		}
 	}
 	if(toRun){
-		var vectorSource = new ol.source.Vector({
+		vectorSource = new ol.source.Vector({
 			features: pisteet //add an array of features
 		});
 
@@ -138,25 +142,74 @@ function updatePoints(points) {
 
 }
 
-function slotInformation(index){
-	// Eli nyt käyttäjä on valinnut paikan <index>(slots[index])
-	// Kerrotaan palvelimelle siitä
-	let time = new Date().getTime();
-	$.ajax({
-		url: "/ticket-reservation-map/reserve.php",
+function uudenPisteenLisays(x, y){
+	// Täääääää sitten tulee olemaan ihna vitun reikänen paska.
+	// Tätä kutsutaan jos pistettä clickauksen alla ei ole. Luo pisteen vapaa statuksella
+	// TODO: tietojen kantaan kirjoittaminen
+	var iconFeature = new ol.Feature({
+		geometry: new ol.geom.Point([x, y]),
+		name: 'Testi',
+		slot: "xy"
+	});
+	iconFeature.setStyle(freeStyle);
+	pisteet.push(iconFeature);
+	vectorSource.addFeature(iconFeature)
+	var slot = prompt("Paikkaid", "a1");
+	if(slot != null){
+		$.ajax({
+		url: "/ticket-reservation-map/addSlot.php",
 		type: "POST",
 		dataType: "json",
-		data: {time:time, slot: index},
+		data: {slot: slot, xCoord: x, yCoord: y},
 		success: function(result) {
-			if(result["error"] === false){
-				slots[index].point.setStyle(av);
-			}
+			console.log(result)
 		},
 		error: function(error){
 			console.log(error)
 		}
 	})
+	}
+}
 
+function slotInformation(index){
+	// Eli nyt käyttäjä on valinnut paikan <index>(slots[index])
+	// Kerrotaan palvelimelle siitä
+
+	//DELETE TESTI
+	if(deletaus){
+		$.ajax({
+			url: "/ticket-reservation-map/delete.php",
+			type: "POST",
+			dataType: "json",
+			data: {slot: index},
+			success: function(result) {
+				if(result["error"] === false){
+					console.log(index + "poistettiin")
+				}
+			},
+			error: function(error){
+				console.log(error)
+			}
+		})
+	}else{
+
+		let time = new Date().getTime();
+		$.ajax({
+			url: "/ticket-reservation-map/reserve.php",
+			type: "POST",
+			dataType: "json",
+			data: {time:time, slot: index},
+			success: function(result) {
+				console.log(result)
+				if(result["error"] === false){
+					slots[index].point.setStyle(av);
+				}
+			},
+			error: function(error){
+				console.log(error)
+			}
+		})
+	}
 }
 
 function freeASlot(index){
