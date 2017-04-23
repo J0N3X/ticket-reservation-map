@@ -20,6 +20,15 @@ var reserved = new ol.style.Style({
 		src: '/ticket-reservation-map/img/varattu.png'
 	}))
 });
+// Alustava varaus
+var av = new ol.style.Style({
+	image: new ol.style.Icon(/** @type {olx.style.IconOptions} */({
+		anchor: [5, 5],
+		anchorXUnits: 'pixels',
+		anchorYUnits: 'pixels',
+		src: '/ticket-reservation-map/img/av.png'
+	}))
+});
 $(document).ready(function() {
 
 	var kartta = new Image();
@@ -55,7 +64,7 @@ $(document).ready(function() {
 		map.on('click', function(evt) {
 			var feature = map.forEachFeatureAtPixel(evt.pixel,
 				function(feature) {
-				return feature;
+					return feature;
 				});
 			if (feature) {
 				slotInformation(feature.get("slot"))
@@ -71,6 +80,7 @@ function loadPointInfo() {
 		url: "/ticket-reservation-map/map.php",
 		dataType: "json",
 		success: function(result) {
+			console.log(result);
 			updatePoints(result);
 		}
 	})
@@ -96,8 +106,10 @@ function updatePoints(points) {
 				});
 				if(points[i].status === "free"){
 					iconFeature.setStyle(freeStyle);
-				}else{
+				}else if(points[i].status === "reserved"){
 					iconFeature.setStyle(reserved);
+				}else if(points[i].status === "av"){
+					iconFeature.setStyle(av);
 				}
 				iconFeature.on("click", slotInformation.bind(slots[i]))
 				pisteet.push(iconFeature);
@@ -126,6 +138,40 @@ function updatePoints(points) {
 }
 
 function slotInformation(index){
-	console.log(index)
-	console.log(slots[index])
+	// Eli nyt käyttäjä on valinnut paikan <index>(slots[index])
+	// Kerrotaan palvelimelle siitä
+	let time = new Date().getTime();
+	$.ajax({
+		url: "/ticket-reservation-map/reserve.php",
+		type: "POST",
+		dataType: "json",
+		data: {time:time, slot: index},
+		success: function(result) {
+			if(result["error"] === false){
+				slots[index].point.setStyle(av);
+			}
+		},
+		error: function(error){
+			console.log(error)
+		}
+	})
+
+}
+
+function freeASlot(index){
+	$.ajax({
+		url: "/ticket-reservation-map/freeup.php",
+		type: "POST",
+		dataType: "json",
+		data: {slot: index},
+		success: function(result) {
+			if(result["error"] === false){
+				slots[index].point.setStyle(freeStyle);
+				console.log("slot freed");
+			}
+		},
+		error: function(error){
+			console.log(error)
+		}
+	})
 }

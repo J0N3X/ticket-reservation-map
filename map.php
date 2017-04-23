@@ -1,15 +1,32 @@
 <?php
-$testi = array(
-	"a1" => array(
-		"x" => 362.3046875000001,
-		"y" => 646.1601562500005,
-		"status" => "free",
-	),
-	"a2" => array(
-		"x" => 375.4414062500001,
-		"y" => 646.1601562500005,
-		"status" => "reserved",
-	)
-);
-print json_encode($testi);
+$servername = "localhost";
+$database ="tapahtuma_1_paikat";
+$username = "test";
+$password = "test";
+$slots = array();
+
+try{
+	$conn = new mysqli($servername, $username, $password, $database);
+
+	$queryStr = "SELECT * FROM paikat ORDER BY paikka ASC";
+	$result = $conn->query($queryStr);
+	if($result->num_rows > 0){
+		while($row = $result->fetch_assoc()) {
+			$slots[$row["paikka"]] = array(
+				"x" => $row["xCoord"],
+				"y" => $row["yCoord"],
+				"status" => $row["status"],
+				"owner" => $row["owner"],
+				"avTime" => $row["avTime"],
+			);
+		}
+	}
+	$conn->close();
+}
+catch(mysqli_sql_exception $ex){
+	$slots["error"] = $ex;
+}
+
+
+print json_encode($slots);
 ?>
